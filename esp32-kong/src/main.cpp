@@ -6,6 +6,7 @@
 #include <WiFiUdp.h>
 #include <WiFi.h>
 #include "orionAirQuality.h"
+#include "Constants.h"
 
 #define SECONDS_PER_DAY 86400
 #define UPLOAD_AT_EXACT_TIME 1
@@ -24,6 +25,8 @@ static constexpr char FIWARE_DEVICE[] = "parque-central-sensor-1";
 static constexpr char FIWARE_SERVER[] = "ec2-18-116-49-4.us-east-2.compute.amazonaws.com";
 static constexpr uint16_t FIWARE_PORT = 1027;
 
+
+
 Adafruit_PM25AQI aqi = Adafruit_PM25AQI();
 WiFiClient client;
 orionAirQuality orionAirSensor1(1);
@@ -35,7 +38,7 @@ unsigned long curr_time = 0;
 unsigned long last_time_update = 0;
 
 //############### How much time between uploads (in minutes)######################
-const uint32_t UPLOAD_PERIOD = 3; // minutes
+const uint32_t UPLOAD_PERIOD = 1; // minutes
 bool allow_upload = false;
 unsigned long last_upload_time = 0;
 uint elapsed_time = 0;
@@ -117,7 +120,7 @@ void setup() {
     }
 
     Serial.println("PM25 found!");
-    orionAirSensor1.init(&client, &aqi, &timeClient, FIWARE_SERVER, &FIWARE_PORT, FIWARE_DEVICE);
+    orionAirSensor1.init(&client, &aqi, &timeClient, Constants::KONG_URL, Constants::KONG_TOKEN, Constants::KONG_IP, Constants::KONG_PORT);
 
     // Attempt to connect to wifi
     if (connectWifi(10)){
