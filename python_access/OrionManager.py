@@ -16,10 +16,8 @@ def parse_date(entity):
 from dotenv import load_dotenv
 load_dotenv()
 
-KONG_URL = os.getenv("KONG_URL")
-
 class OrionManager:
-    def __init__(self, client_id: str, client_secret: str, keycloak_url: str, orion_url: str):
+    def __init__(self, client_id: str, client_secret: str, keycloak_url: str, orion_url: str, kong_url: str):
         """
         Initialize the OrionManager class.
 
@@ -33,6 +31,7 @@ class OrionManager:
         self.client_secret = client_secret
         self.keycloak_url = keycloak_url.rstrip("/")
         self.orion_url = orion_url.rstrip("/")
+        self.kong_url = kong_url.rstrip("/")
         self.token = None
         self.token_expiry = 0
 
@@ -66,7 +65,13 @@ class OrionManager:
         if not self.token or time.time() > self.token_expiry:
             self.obtain_token()
         return self.token
-
+    
+    def get_modify_headers(self):
+        return {
+            "Authorization": f"Bearer {self.get_token()}",
+            "Content-Type": "application/ld+json"
+        }
+    
     def fetch_and_filter_entities(self, entity_type: str, path_prefix: str = "galeria", batch_size: int = 1000) -> list[str]:
         """
         Fetch and filter entities based on a prefix for the 'path' field.
@@ -167,7 +172,7 @@ class OrionManager:
         except IOError as e:
             print(f"Error saving paths to file: {e}")
             
-    def create_temperature_entity(self, value: float, observed_at: datetime) -> dict:
+    def build_temperature_entity(self, value: float, observed_at: datetime) -> dict:
         """
         Create a temperature entity.
 
@@ -186,7 +191,42 @@ class OrionManager:
         e.prop("dateObserved", observed_at.isoformat())
 
         print('Temperature entity created')
-        return e.data
+        return e
+    
+    def build_environment_entity(self, values:list[float], observed_at: datetime) -> dict:
+        """
+        Create a temperature entity.
+
+        Args:
+            location: tuple -> Coordinates (longitude, latitude).
+            value: float -> Temperature value.
+            observed_at: datetime -> Observation timestamp.
+        Returns:
+            dict: Entity data.
+        """
+        print('Creating environment entity')
+
+        unique_id = str(uuid.uuid4())
+        e = Entity("ParticleSensor", f"urn:ngsi-ld:ParticleSensor:{unique_id}")
+        e.prop("PM10", values[0])
+        e.prop("PM2.5", values[1])
+        e.prop("PM1", values[2])
+        e.prop("dateObserved", observed_at.isoformat())
+
+        print('ParticleSensor entity created')
+        return e
+    
+    def create_entity(self, entity_data: dict) -> None:
+        """
+        Create an entity in the Orion-LD context broker.
+        """
+        print('Creating entity')
+
+        response = requests.post(
+            self.kong_url, headers=self.get_modify_headers(), data=json.dumps(entity_data))
+        response.raise_for_status()
+
+        print("Entity created successfully.")
     
     def query_type(self, entity_type, offset=0, entities_limit=2000) -> list:
         params = {
