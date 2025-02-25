@@ -16,6 +16,21 @@ def parse_date(entity):
 from dotenv import load_dotenv
 load_dotenv()
 
+def pretty_print_POST(req):
+            """
+            At this point it is completely built and ready
+            to be fired; it is "prepared".
+
+            However pay attention at the formatting used in 
+            this function because it is programmed to be pretty 
+            printed and may differ from the actual request.
+            """
+            print('{}\n{}\r\n{}\r\n\r\n{}'.format(
+                '-----------START-----------',
+                req.method + ' ' + req.url,
+                '\r\n'.join('{}: {}'.format(k, v) for k, v in req.headers.items()),
+                req.body,
+            ))
 class OrionManager:
     def __init__(self, client_id: str, client_secret: str, keycloak_url: str, orion_url: str, kong_url: str):
         """
@@ -48,6 +63,9 @@ class OrionManager:
         if self.token_expiry < time.time():
             try:
                 response = requests.post(self.keycloak_url, data=token_data)
+                # also print the whole request
+                req = response.request
+                pretty_print_POST(req)
                 response.raise_for_status()
                 token_json = response.json()
                 self.token = token_json.get("access_token")
@@ -222,10 +240,18 @@ class OrionManager:
         """
         print('Creating entity')
 
-        response = requests.post(
-            self.kong_url, headers=self.get_modify_headers(), data=json.dumps(entity_data))
-        response.raise_for_status()
+        # response = requests.post(
+        #     self.kong_url, headers=self.get_modify_headers(), data=json.dumps(entity_data))
+        # print(response.request.url)
+        # print(response.request.body)
+        # print(response.request.headers)
+        # response.raise_for_status()
 
+        req = requests.Request('POST', self.kong_url, headers=self.get_modify_headers(), data=json.dumps(entity_data))
+        prepared = req.prepare()
+
+        
+        pretty_print_POST(prepared)
         print("Entity created successfully.")
     
     def query_type(self, entity_type, offset=0, entities_limit=2000) -> list:

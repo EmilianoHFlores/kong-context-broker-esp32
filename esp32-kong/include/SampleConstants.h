@@ -1,16 +1,23 @@
-// #ifndef SampleConstants_h
-// #define SampleConstants_h
+#ifndef Constants_h
+#define Constants_h
 
-// #include <Arduino.h>
+#include <Arduino.h>
 
-//  //################ WIFI VARIABLES ################
-// static constexpr char WIFI_SSID[] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";     // replace with your SSID
-// static constexpr char WIFI_PASSWORD[] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";     // replace with your PASSWORD
+//################ WIFI VARIABLES ################
+namespace Constants {
+    
+    static constexpr char WIFI_SSID[] = "xxxx";     // replace with your SSID
+    static constexpr char WIFI_PASSWORD[] = "xxxx";     // replace with your PASSWORD
+    //################ FIWARE VARIABLES ################
+    static constexpr char KONG_URL[] = "xxxx";
+    static constexpr char KONG_IP[] = "xxxx";
+    static constexpr uint16_t KONG_PORT = 0000;
+    static constexpr char KONG_TOKEN[] = "xxx";
+    static constexpr char KEYCLOAK_URL[] = "xxxx";
+    static constexpr char KEYCLOAK_CLIENT_ID[] = "xxxx";
+    static constexpr char KEYCLOAK_CLIENT_SECRET[] = "xxxx";
+    static constexpr char KEYCLOAK_IP[] = "xxxx";
+    static constexpr uint16_t KEYCLOAK_PORT = 0000;
+};
 
-// //################ FIWARE VARIABLES ################
-// static constexpr char FIWARE_APIKEY[] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-// static constexpr char FIWARE_DEVICE[] = "parque-central-sensor-1";
-// static constexpr char FIWARE_SERVER[] = "ec2-18-116-49-4.us-east-2.compute.amazonaws.com";
-// static constexpr char FIWARE_PORT[] = "1027";
-
-// #endif
+#endif

@@ -5,6 +5,7 @@
 #include "Adafruit_PM25AQI.h"
 #include <WiFi.h>
 #include <NTPClient.h>
+#include <ArduinoJson.h>
 
 class orionAirQuality{
     public:
@@ -14,7 +15,7 @@ class orionAirQuality{
         void upload();
         void print();
         void postMeasurements();
-        void getToken();
+        String getToken();
     private:
         int _id;
         Adafruit_PM25AQI *_aqi;
@@ -24,6 +25,7 @@ class orionAirQuality{
         const char *_kong_url;
         const char *_kong_token;
         const char *_kong_ip;
+        JsonDocument _json_handler;
         uint16_t _kong_port;
         int read_status;
 };

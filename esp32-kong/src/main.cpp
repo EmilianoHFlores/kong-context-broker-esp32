@@ -17,8 +17,8 @@
 //#include <SoftwareSerial.h>
 //SoftwareSerial pmSerial(2, 3);
 
-static constexpr char WIFI_SSID[] = "IZZI-A322-RT";     // replace with your SSID
-static constexpr char WIFI_PASSWORD[] = "9CC8FC87A322";     // replace with your PASSWORD
+static constexpr char WIFI_SSID[] = "RoBorregos2";     // replace with your SSID
+static constexpr char WIFI_PASSWORD[] = "RoBorregos2024";     // replace with your PASSWORD
 //################ FIWARE VARIABLES ################
 static constexpr char FIWARE_APIKEY[] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 static constexpr char FIWARE_DEVICE[] = "parque-central-sensor-1";

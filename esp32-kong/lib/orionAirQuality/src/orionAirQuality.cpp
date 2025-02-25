@@ -4,6 +4,9 @@
 #include <NTPClient.h>
 #include <Arduino_JSON.h>
 #include <Constants.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+
 
 orionAirQuality::orionAirQuality(int id){
     // Constructor
@@ -87,46 +90,76 @@ void orionAirQuality::print(){
 // Content-Length: 98
 // Content-Type: application/x-www-form-urlencoded
 // */
-void orionAirQuality::getToken(){
-    if (_client->connect("40.84.231.179", 8080)){
-        Serial.println("Connected to server");
-        _client->println("POST http://40.84.231.179:8080/realms/master/protocol/openid-connect/token");
-        _client->println("User-Agent: python-requests/2.32.3");
-        _client->println("Accept-Encoding: gzip, deflate");
-        _client->println("Accept: */*");
-        _client->println("Connection: keep-alive");
-        _client->println("Content-Length: 98");
-        _client->println("Content-Type: application/x-www-form-urlencoded");
-        _client->println();
-        _client->println("grant_type=client_credentials&client_id=kong_client&client_secret=FOihFkvVFhMkRzMNpEMoaO6ByuPI5fLa");
-        Serial.println("Message sent");
+String orionAirQuality::getToken(){
+    // if (_client->connect("40.84.231.179", 8080)){
+    //     Serial.println("Connected to server");
+    //     _client->println("POST http://40.84.231.179:8080/realms/master/protocol/openid-connect/token");
+    //     _client->println("User-Agent: python-requests/2.32.3");
+    //     _client->println("Accept-Encoding: gzip, deflate");
+    //     _client->println("Accept: */*");
+    //     _client->println("Connection: keep-alive");
+    //     _client->println("Content-Length: 98");
+    //     _client->println("Content-Type: application/x-www-form-urlencoded");
+    //     _client->println();
+    //     _client->println("grant_type=client_credentials&client_id=kong_client&client_secret=FOihFkvVFhMkRzMNpEMoaO6ByuPI5fLa");
+    //     _client->println();
+    //     Serial.println("Message sent");
+    // }
+    if (!_client->connect(Constants::KEYCLOAK_IP, Constants::KEYCLOAK_PORT)){
+        Serial.println("Connection failed");
     }
-    // receive and store response
-    String response;
-    int timeout = 1000;
-    int i = 0;
-    while(!_client->available()){
-        i++;
-        if (i > timeout){
-            Serial.println("Timeout");
-            break;
+    else {
+        Serial.println("Connection successful");
+    }
+    HTTPClient http;
+    http.begin(Constants::KEYCLOAK_URL);
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    // String query_string = "grant_type=client_credentials&client_id=kong_client&client_secret=FOihFkvVFhMkRzMNpEMoaO6ByuPI5fLa";
+    String query_string = "grant_type=client_credentials&client_id=" + String(Constants::KEYCLOAK_CLIENT_ID) + "&client_secret=" + String(Constants::KEYCLOAK_CLIENT_SECRET);
+    int httpCode = http.POST(query_string);
+    String token;
+    if (httpCode > 0){
+        Serial.printf("[HTTP] POST... code: %d\n", httpCode);
+        if (httpCode == HTTP_CODE_OK){
+            String payload = http.getString();
+            Serial.println(payload);
+            deserializeJson(_json_handler, payload);
+            String token = _json_handler[String("access_token")];
+            Serial.println("Token: "+ String(token));
+            return token;
         }
-        delay(1);
-    }
-    if (_client->available()){
-        response = _client->readString();
-        Serial.println("Response:");
-        Serial.println(response);
     }
     else{
-        Serial.println("No response");
+        Serial.printf("[HTTP] POST... failed, error: %s\n", http.errorToString(httpCode).c_str());
+        return token;
     }
-    // parse response
-    const char* responseStr = response.c_str();
-    JSONVar parsedResponse = JSONVar::parse(responseStr);
-    String token = (const char*) parsedResponse["access_token"];
-    Serial.print("Token: ");
-    Serial.println(token);
+    // // receive and store response
+    // String response;
+    // int timeout = 1000;
+    // int i = 0;
+    // while(!_client->available()){
+    //     i++;
+    //     if (i > timeout){
+    //         Serial.println("Timeout");
+    //         break;
+    //     }
+    //     delay(1);
+    // }
+    // if (_client->available()){
+    //     response = _client->readString();
+    //     Serial.println("Response:");
+    //     Serial.println(response);
+    // }
+    // else{
+    //     Serial.println("No response");
+    // }
+    // // parse response
+    // const char* responseStr = response.c_str();
+    // JSONVar parsedResponse = JSONVar::parse(responseStr);
+    // String token = (const char*) parsedResponse["access_token"];
+    // Serial.print("Token: ");
+    // Serial.println(token);
 }
 
 void orionAirQuality::postMeasurements(){
@@ -134,7 +167,7 @@ void orionAirQuality::postMeasurements(){
 
     String message;
 
-    message += "{\"id\": \"urn:ngsi-ld:ParticleSensor:urn:ngsi-ld:ParticleSensor:" + String(_id) + "-" + String(_timeClient->getEpochTime()) + "\", ";
+    message += "{\"id\": \"urn:ngsi-ld:ParticleSensor:" + String(_id) + "-" + String(_timeClient->getEpochTime()) + "\", ";
     message += "\"type\":\"ParticleSensor\", ";
     message += "\"@context\" : [\"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"], ";
     message += "\"PM10\":{\"type\":\"Property\",\"value\":" + String(data.pm100_standard) + "}, ";
@@ -142,24 +175,46 @@ void orionAirQuality::postMeasurements(){
     message += "\"PM1.0\":{\"type\":\"Property\",\"value\":" + String(data.pm10_standard) + "}, ";
     message += "\"timestamp\":{\"type\":\"Property\",\"value\":" + String(_timeClient->getEpochTime()) + "}}";
 
-    getToken();
+    String token = getToken();
     Serial.println("Message to send:");
     Serial.println(message);
 
-    if (_client->connect(_kong_ip, _kong_port)){
-        // Serial.println("Connected to server");
-        // _client->println("POST " + String(_kong_url));
-        // _client->println("Authorization: Bearer " + String(_kong_token));
-        // _client->println("Content-Type: application/ld+json");
-        // _client->println("Content-Length: " + String(message.length()));
-        // _client->println();
-        // _client->println(message);
-        // _client->println();
-        Serial.println("Message sent");
-    }
-    else{
+    if (!_client->connect(_kong_ip, _kong_port)){
         Serial.println("Connection failed");
     }
+    else{
+        Serial.println("Connected to server");
+        HTTPClient http;
+        http.begin(_kong_url);
+        http.addHeader("Authorization", "Bearer " + token);
+        http.addHeader("Content-Type", "application/ld+json");
+        int httpCode = http.POST(message);
+        if (httpCode > 0){
+            Serial.printf("[HTTP] POST... code: %d\n", httpCode);
+            if (httpCode == HTTP_CODE_OK){
+                String payload = http.getString();
+                Serial.println(payload);
+            }
+        }
+        else{
+            Serial.printf("[HTTP] POST... failed, error: %s\n", http.errorToString(httpCode).c_str());
+        }
+    }
+
+    // if (_client->connect(_kong_ip, _kong_port)){
+    //     Serial.println("Connected to server");
+    //     _client->println("POST " + String(_kong_url));
+    //     _client->println("Authorization: Bearer " + String(token));
+    //     _client->println("Content-Type: application/ld+json");
+    //     _client->println("Content-Length: " + String(message.length()));
+    //     _client->println();
+    //     _client->println(message);
+    //     _client->println();
+    //     Serial.println("Message sent");
+    // }
+    // else{
+    //     Serial.println("Connection failed");
+    // }
 }
 
 /*
