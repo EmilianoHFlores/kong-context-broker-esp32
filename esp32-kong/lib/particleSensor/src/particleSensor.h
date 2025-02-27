@@ -10,7 +10,7 @@ class particleSensor{
     public:
         particleSensor(int id, Adafruit_PM25AQI *aqi, NTPClient *timeClient);
         void init();
-        void update();
+        bool update();
         entity *createEntity();
     private:
         int _id;

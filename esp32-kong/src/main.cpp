@@ -5,8 +5,13 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include <WiFi.h>
-#include "orionAirQuality.h"
 #include "Constants.h"
+#include "entity.h"
+#include "kongContextBroker.h"
+#include "particleSensor.h"
+#include "scd41Sensor.h"
+#include <SensirionI2cScd4x.h>
+
 
 #define SECONDS_PER_DAY 86400
 #define UPLOAD_AT_EXACT_TIME 1
@@ -20,16 +25,10 @@
 static constexpr char WIFI_SSID[] = "RoBorregos2";     // replace with your SSID
 static constexpr char WIFI_PASSWORD[] = "RoBorregos2024";     // replace with your PASSWORD
 //################ FIWARE VARIABLES ################
-static constexpr char FIWARE_APIKEY[] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-static constexpr char FIWARE_DEVICE[] = "parque-central-sensor-1";
-static constexpr char FIWARE_SERVER[] = "ec2-18-116-49-4.us-east-2.compute.amazonaws.com";
-static constexpr uint16_t FIWARE_PORT = 1027;
-
-
 
 Adafruit_PM25AQI aqi = Adafruit_PM25AQI();
+SensirionI2cScd4x scd4x;
 WiFiClient client;
-orionAirQuality orionAirSensor1(1);
 
 // Define NTP Client to get time
 WiFiUDP ntpUDP;
@@ -95,11 +94,16 @@ bool checkPeriod(){
   return false;
 }
 
+particleSensor pmSensor(1, &aqi, &timeClient);
+scd41Sensor scdSensor(1, &scd4x, &timeClient);
+kongContextBroker contextBroker(Constants::KONG_URL, Constants::KEYCLOAK_URL);
 
 void setup() {
     // Wait for serial monitor to open
     Serial.begin(115200);
+    Wire.begin();
     while (!Serial) delay(10);
+    scdSensor.init(0x62);
 
     Serial.println("Parque Central Air Quality Sensor");
 
@@ -120,7 +124,6 @@ void setup() {
     }
 
     Serial.println("PM25 found!");
-    orionAirSensor1.init(&client, &aqi, &timeClient, Constants::KONG_URL, Constants::KONG_TOKEN, Constants::KONG_IP, Constants::KONG_PORT);
 
     // Attempt to connect to wifi
     if (connectWifi(10)){
@@ -140,11 +143,34 @@ void setup() {
 
 unsigned long test_time = 0;
 
+void uploadParticleSensor(){
+    if (pmSensor.update()){
+        Serial.println("Read particle sensor successfully");
+        entity *sensorEntity = pmSensor.createEntity();
+        contextBroker.uploadEntity(sensorEntity);
+    }
+    else{
+        Serial.println("Could not read particle sensor");
+    }
+}
+
+void uploadScdSensor(){
+    if (scdSensor.update()){
+        Serial.println("Read environment sensor successfully");
+        entity *sensorEntity = scdSensor.createEntity();
+        contextBroker.uploadEntity(sensorEntity);
+    }
+    else{
+        Serial.println("Could not read environment sensor");
+    }
+}
+
 void loop() {
 
     if (checkPeriod()){
         Serial.println("Uploading...");
-        orionAirSensor1.upload();
+        uploadParticleSensor();
+        uploadScdSensor();
     } else{
         if (WiFi.status()!= WL_CONNECTED){
             Serial.println("Reconnecting to wifi");
@@ -166,5 +192,3 @@ void loop() {
 
     }
 }
-
-
