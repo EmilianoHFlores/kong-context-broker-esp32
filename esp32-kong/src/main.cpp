@@ -15,15 +15,7 @@
 
 #define SECONDS_PER_DAY 86400
 #define UPLOAD_AT_EXACT_TIME 1
-// If your PM2.5 is UART only, for UNO and others (without hardware serial) 
-// we must use software serial...
-// pin #2 is IN from sensor (TX pin on sensor), leave pin #3 disconnected
-// comment these two lines if using hardware serial
-//#include <SoftwareSerial.h>
-//SoftwareSerial pmSerial(2, 3);
 
-static constexpr char WIFI_SSID[] = "RoBorregos2";     // replace with your SSID
-static constexpr char WIFI_PASSWORD[] = "RoBorregos2024";     // replace with your PASSWORD
 //################ FIWARE VARIABLES ################
 
 Adafruit_PM25AQI aqi = Adafruit_PM25AQI();
@@ -43,9 +35,9 @@ unsigned long last_upload_time = 0;
 uint elapsed_time = 0;
 
 bool connectWifi(int tries){
-  Serial.println("Connecting to wifi: " + String(WIFI_SSID));
+  Serial.println("Connecting to wifi: " + String(Constants::WIFI_SSID));
   int status = WL_IDLE_STATUS;
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.begin(Constants::WIFI_SSID, Constants::WIFI_PASSWORD);
   for (int i = 0; i < tries; i++){
       Serial.print("...");
       delay(10000);
