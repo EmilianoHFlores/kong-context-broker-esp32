@@ -19,4 +19,11 @@ if __name__ == "__main__":
     entities = manager.fetch_entities(entity_type)
     
     print(entities)
-    print(f"Total entities: {len(entities)}")
+    print(f"Total Particle Entities: {len(entities)}")
+    
+    entity_type = "EnvironmentSensor"
+    
+    entities = manager.fetch_entities(entity_type)
+    
+    print(entities)
+    print(f"Total Environment Entities: {len(entities)}")
