@@ -1,0 +1,3 @@
+[submodule "esp32-kong/lib/Esp32-Web-Update"]
+	path = esp32-kong/lib/Esp32-Web-Update
+	url = https://github.com/shiroichiheisen/Esp32-Web-Update
