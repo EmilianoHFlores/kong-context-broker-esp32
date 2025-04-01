@@ -5,6 +5,7 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include <WiFi.h>
+#include <ArduinoOTA.h>
 #include "Constants.h"
 #include "entity.h"
 #include "kongContextBroker.h"
@@ -29,7 +30,7 @@ unsigned long curr_time = 0;
 unsigned long last_time_update = 0;
 
 //############### How much time between uploads (in minutes)######################
-const uint32_t UPLOAD_PERIOD = 1; // minutes
+const uint32_t UPLOAD_PERIOD = 10; // minutes
 bool allow_upload = false;
 unsigned long last_upload_time = 0;
 uint elapsed_time = 0;
@@ -125,6 +126,12 @@ void setup() {
         Serial.println("Could not connect to wifi");
     }
 
+    ArduinoOTA.setHostname("ESP32-OTA");  // Nombre del ESP32 en OTA
+    ArduinoOTA.setPassword("CienciasCiudades2024");     // (Opcional) Contraseña OTA
+    ArduinoOTA.begin();
+    Serial.println("OTA Listo!");
+
+
     // Initialize a NTPClient to get time
     timeClient.begin();
     // Set offset time in seconds to adjust for your timezone, for example:
@@ -158,7 +165,7 @@ void uploadScdSensor(){
 }
 
 void loop() {
-
+    ArduinoOTA.handle();
     if (checkPeriod()){
         Serial.println("Uploading...");
         uploadParticleSensor();
